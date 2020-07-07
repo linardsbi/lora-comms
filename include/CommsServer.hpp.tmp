@@ -1,0 +1,36 @@
+#ifndef _HOME_HVS_DOCUMENTS_PLATFORMIO_PROJECTS_ESP_LORA_COMMS_SRC_COMMSSERVER_HPP
+#define _HOME_HVS_DOCUMENTS_PLATFORMIO_PROJECTS_ESP_LORA_COMMS_SRC_COMMSSERVER_HPP
+#include <ESPAsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <Hash.h>
+
+class CommsServer {
+public:
+  CommsServer(const uint16_t port) : server(new AsyncWebServer(port)) {
+
+    server->on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+      request->send_P(200, "text/html", {"index"},
+                      [request](const String &vars) {
+                        Serial.println(vars);
+                        return String("whatevs");
+                      });
+    });
+
+    server->on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request) {
+      request->send_P(200, "text/plain", {"temperature/temperature"});
+    });
+    server->on("/humidity", HTTP_GET, [](AsyncWebServerRequest *request) {
+      request->send_P(200, "text/plain", {"humidity"});
+    });
+
+    server->begin();
+  }
+
+  ~CommsServer() {
+      if (server) delete server;
+  }
+
+private:
+  AsyncWebServer *server{nullptr};
+};
+#endif
