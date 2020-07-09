@@ -1,2 +1,2 @@
 # LORA COMMS
-This is going to be an ESP8266 messaging app over LoRa. The user will be able to use his phone to use the ESP's access point to send messages to other instances of the app.
+This is going to be an ESP8266 messaging app over LoRa. The app will provide an access point to send messages from a phone to other instances of the app. In other words, the app will provide point to point communication by combining LoRa and a web-based GUI.

@@ -1,0 +1,16 @@
+/
+   show a welcome message and a login screen
+   ask for a password
+   if password is correct goto /home
+/home
+   show saved connections
+   options to choose saved connection
+   		     create new connection
+		     do broadcast
+/new-partner
+   ask for the id of the partner
+/broadcast
+   enter message to broadcast
+/fixed/{partner_id}
+   display partners' messages
+   show box for sending messages

@@ -1,0 +1,54 @@
+.message-me {
+    text-align: right;
+    background: #e6d744;
+}
+
+.message-other {
+    text-align: left;
+    background: #464e76;
+    color: #fff;
+    z-index: -1;
+}
+
+h4 {
+    font-size: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+.message-box {
+    font-style: italic;
+    font-weight: bold;
+    position: relative;
+    height: 70vh;
+    overflow-x: hidden;
+    padding-right: 22px;
+    padding-bottom: 12px;
+}
+
+.message-box > div {
+    margin: 6px 0;
+    padding: 10px;
+    box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.3);
+    position: relative;
+    width: 100%;
+}
+
+.message-box > div > div {
+    padding-bottom: 5px;
+}
+.message-box > div > span {
+    font-style: normal;
+}
+
+.text-box {
+    display: flex;
+}
+
+input {
+    flex: 1;
+    border-right: 0px;
+    border-width: 1px;
+}

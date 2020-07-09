@@ -3,64 +3,71 @@
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <Hash.h>
+#include <Logger.hpp>
 
 class CommsServer {
 public:
-  CommsServer(const uint16_t port) : server(new AsyncWebServer(port)) {
-
+  CommsServer(const uint16_t port) : server(new AsyncWebServer(port)) {}
+  void begin() {
     server->on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-      request->send_P(200, "text/html", PSTR(R"raw(<!DOCTYPE HTML><html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="./css/style.css" type="text/css">
-  <script type="text/javascript" src="./js/main.js"></script>
-</head>
-<body>
-  <h2>ESP8266 DHT Server</h2>
-  <p>
-    <span class="dht-labels">Temperature</span> 
-    <span id="temperature">%TEMPERATURE%</span>
-    <sup class="units">&deg;C</sup>
-  </p>
-  <p>
-    <span class="dht-labels">Humidity</span>
-    <span id="humidity">%HUMIDITY%</span>
-    <sup class="units">%</sup>
-  </p>
-</body>
-</html>)raw"),
+      request->send_P(200, "text/html", {"index"},
                       [request](const String &vars) {
                         Serial.println(vars);
                         return String("whatevs");
                       });
     });
 
-    server->on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request) {
-      request->send_P(200, "text/plain", PSTR(R"raw(<!DOCTYPE HTML><html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-  <h2>Temperature</h2>
-</body>
-</html>)raw"));
+    server->on("/login", HTTP_POST, [](AsyncWebServerRequest *request) {
+      // TODO: create response
+
+      Logger::print(Serial, F("User entered password: "),
+                    request->arg("password"), '\n');
+
+      if (!request->authenticate("me", "secret"))
+        return request->requestAuthentication();
+      else
+        request->redirect("/home");
     });
-    server->on("/humidity", HTTP_GET, [](AsyncWebServerRequest *request) {
-      request->send_P(200, "text/plain", PSTR(R"raw(<!DOCTYPE HTML><html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-  <h2>Humidity</h2>
-</body>
-</html>)raw"));
+
+    server->on("/home", HTTP_GET, [](AsyncWebServerRequest *request) {
+      request->send_P(200, "text/html", {"comms/home"},
+                      [request](const String &vars) {
+                        if (vars == "CONNECTIONS") {
+                          return String("first:00 03 04,second:00 01 04");
+                        }
+                        return String("whatevs");
+                      });
+              
+    });
+
+    server->on("/new-partner", HTTP_GET, [](AsyncWebServerRequest *request) {
+      request->send_P(200, "text/html", {"comms/create-partner"});
+    });
+
+    server->on("/new-partner/create", HTTP_POST,
+               [](AsyncWebServerRequest *request) {
+                 // TODO: create response
+                 request->redirect("/home");
+               });
+
+    server->on("/broadcast", HTTP_GET, [](AsyncWebServerRequest *request) {
+      request->send_P(200, "text/html", {"comms/broadcast"});
+    });
+
+    server->on("/fixed", HTTP_GET, [](AsyncWebServerRequest *request) {
+      request->send_P(200, "text/html", {"comms/fixed-transmit"}, [request](const String &vars) {
+                        if (vars == "MSG_TO") {
+                          return String("first");
+                        }
+                        return String("whatevs");
+                      });
     });
 
     server->begin();
   }
-
   ~CommsServer() {
-      if (server) delete server;
+    if (server)
+      delete server;
   }
 
 private:

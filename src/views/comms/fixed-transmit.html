@@ -1,0 +1,35 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <title>%TITLE%</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../public/css/style.css" type="text/css">
+  <link rel="stylesheet" href="../public/css/transmit.css" type="text/css">
+  <script type="text/javascript" src="../public/js/main.js"></script>
+</head>
+
+<body>
+  <main>
+    <header>
+      <h4>Sending to: %MSG_TO%</h4>
+    </header>
+    <section id="chat-window">
+      <div class="message-box">
+        <div class="message-me hidden">
+          <div></div><span></span>
+        </div>
+        <div class="message-other hidden">
+          <div></div><span></span>
+        </div>
+      </div>
+      <div class="text-box">
+        <input type="text" name="msg" id="msg-input">
+        <a href="#" id="send" class="button" data-addressee="%MSG_TO%">Send</a>
+      </div>
+    </section>
+  </main>
+  <script type="text/javascript" src="../public/js/transmit.js"></script>
+</body>
+
+</html>
