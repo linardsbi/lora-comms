@@ -1,76 +1,89 @@
 #ifndef _HOME_HVS_DOCUMENTS_PLATFORMIO_PROJECTS_ESP_LORA_COMMS_SRC_COMMSSERVER_HPP
 #define _HOME_HVS_DOCUMENTS_PLATFORMIO_PROJECTS_ESP_LORA_COMMS_SRC_COMMSSERVER_HPP
+
+#include "../src/controllers/HomeController.hpp"
+#include "../src/controllers/MessageController.hpp"
+#include "../src/controllers/TransmitController.hpp"
+#include "../src/controllers/UserController.hpp"
+
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <Hash.h>
 #include <Logger.hpp>
+#include <LoraRadio.hpp>
+#include <memory>
+
+using LoraRadioPtr = std::shared_ptr<E32_100>;
+
+// needed for lora radio message reception callback
+namespace radioCB {
+LoraRadioPtr radioPtr{nullptr};
+std::shared_ptr<AsyncWebSocket> wsPtr{nullptr};
+
+ICACHE_RAM_ATTR void recv() {
+  if (radioPtr && radioPtr->getCurrentMode() == 0 && radioPtr->available()) {
+    std::vector<char> buf(radioPtr->available());
+    radioPtr->readIntoBuffer(buf);
+    // TODO: create a method that gets the module who sent the message
+    wsPtr->printfAll("x:%s", buf.data());
+    for (const auto item : buf) {
+      Serial.print(item, HEX);
+      Serial.print(' ');
+    }
+    Serial.println();
+  }
+}
+} // namespace radioCB
 
 class CommsServer {
 public:
-  CommsServer(const uint16_t port) : server(new AsyncWebServer(port)) {}
+  CommsServer(const uint16_t webPort, const ModulePorts &ports)
+      : server(new AsyncWebServer(webPort)),
+        ws(new AsyncWebSocket("/messages")), radio(new E32_100(ports)) {}
+
   void begin() {
-    server->on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-      request->send_P(200, "text/html", {"index"},
-                      [request](const String &vars) {
-                        Serial.println(vars);
-                        return String("whatevs");
-                      });
+
+    radio->begin();
+
+    radioCB::radioPtr = radio;
+    radio->onReceive(radioCB::recv);
+
+    ws->onEvent([radio = this->radio](
+                    AsyncWebSocket *, AsyncWebSocketClient *client,
+                    AwsEventType type, void *, uint8_t *data, size_t len) {
+      MessageController::handleWSEvent(radio, client, type, data, len);
     });
 
-    server->on("/login", HTTP_POST, [](AsyncWebServerRequest *request) {
-      // TODO: create response
+    radioCB::wsPtr = ws;
 
-      Logger::print(Serial, F("User entered password: "),
-                    request->arg("password"), '\n');
+    server->addHandler(ws.get());
 
-      if (!request->authenticate("me", "secret"))
-        return request->requestAuthentication();
-      else
-        request->redirect("/home");
-    });
+    server->on("/", HTTP_GET, HomeController::index);
 
-    server->on("/home", HTTP_GET, [](AsyncWebServerRequest *request) {
-      request->send_P(200, "text/html", {"comms/home"},
-                      [request](const String &vars) {
-                        if (vars == "CONNECTIONS") {
-                          return String("first:00 03 04,second:00 01 04");
-                        }
-                        return String("whatevs");
-                      });
-              
-    });
+    server->on("/login", HTTP_POST, HomeController::login);
 
-    server->on("/new-partner", HTTP_GET, [](AsyncWebServerRequest *request) {
-      request->send_P(200, "text/html", {"comms/create-partner"});
-    });
-
-    server->on("/new-partner/create", HTTP_POST,
-               [](AsyncWebServerRequest *request) {
-                 // TODO: create response
-                 request->redirect("/home");
+    server->on("/home", HTTP_GET,
+               [radio = this->radio](AsyncWebServerRequest *request) {
+                 HomeController::home(radio, request);
                });
 
-    server->on("/broadcast", HTTP_GET, [](AsyncWebServerRequest *request) {
-      request->send_P(200, "text/html", {"comms/broadcast"});
-    });
+    server->on("/new-partner", HTTP_GET, UserController::index);
 
-    server->on("/fixed", HTTP_GET, [](AsyncWebServerRequest *request) {
-      request->send_P(200, "text/html", {"comms/fixed-transmit"}, [request](const String &vars) {
-                        if (vars == "MSG_TO") {
-                          return String("first");
-                        }
-                        return String("whatevs");
-                      });
-    });
+    server->on("/new-partner/create", HTTP_POST, UserController::create);
+
+    server->on("/broadcast", HTTP_GET, TransmitController::broadcast);
+
+    server->on("/fixed", HTTP_GET,
+               [radio = this->radio](AsyncWebServerRequest *request) {
+                 TransmitController::show(radio, request);
+               });
 
     server->begin();
   }
-  ~CommsServer() {
-    if (server)
-      delete server;
-  }
 
 private:
-  AsyncWebServer *server{nullptr};
+  std::unique_ptr<AsyncWebServer> server{nullptr};
+  std::shared_ptr<AsyncWebSocket> ws{nullptr};
+  LoraRadioPtr radio{nullptr};
 };
 #endif

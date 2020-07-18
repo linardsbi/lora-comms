@@ -2,7 +2,13 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 
-CommsServer s(80);
+CommsServer s(80, {
+    .RX = D2,
+    .TX = D3,
+    .AUX = D5,
+    .M0 = D7,
+    .M1 = D6,
+});
 void setup(){
   Serial.begin(115200);
  

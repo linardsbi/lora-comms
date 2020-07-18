@@ -15,8 +15,7 @@
     }
 
     document.getElementById("connections").addEventListener("click", (e) => {
-        //const conns = "%CONNECTIONS%";
-        const conns = "first:00 03 04,second:00 01 04";
+        const conns = "_CONNECTIONS_";
         let content = "";
         for (let conn of conns.split(",")) {
             if (conn.indexOf(":") < 0) {

@@ -1,6 +1,6 @@
 (() => {
     function startSocket() {
-        let socket = new WebSocket("wss://localhost/messages");
+        let socket = new WebSocket(`ws://${window.location.host}/messages`);
 
         socket.onopen = function (e) {
             console.log("[open] Connection established");
@@ -8,6 +8,11 @@
 
         socket.onmessage = function (event) {
             console.log(`[message] Data received from server: ${event.data}`);
+            const msgBar = document.getElementById("msg-bar");
+            if (msgBar) {
+                msgBar.children[2].innerHTML = event.data;
+            }
+            
         };
 
         socket.onclose = function (event) {
@@ -24,5 +29,6 @@
             console.log(`[error] ${error.message}`);
         };
     }
+
     startSocket();
 })();

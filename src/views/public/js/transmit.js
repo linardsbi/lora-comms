@@ -1,5 +1,19 @@
 (() => {
+    const STARTTR = 1;
+    const ENDTR = 4;
+    const FIXEDTR = 17;
+    const CLEARTR = 18;
+
     let debounce = false;
+    let socket = new WebSocket(`ws://${window.location.host}/messages`);
+    let addressee = document.getElementById("send").getAttribute("data-addressee").split(" ");
+    let bytes = new Uint8Array(4);
+    
+    for (let i = 1; i < 4; i++) {
+        bytes[i] = Number(addressee[i-1]);
+    }
+
+    addressee = addressee.join("");
 
     function scrollBottom() {
         const box = document.getElementById("chat-window").children[0];
@@ -23,22 +37,41 @@
             debounce = false
         }, 1000);
 
-        let input = document.getElementById("msg-input");
+        let val = document.getElementById("msg-input").value;
+        if (!val) return;
 
-        if (!input.value) return;
-        addMessageBox(input.value);
+        addMessageBox(val);
+        bytes[0] = FIXEDTR;
+        socket.send(`${STARTTR}${bytes[0]}${bytes[1]}${bytes[2]}${bytes[3]}${val}${ENDTR}`);
 
-        let xhttp = new XMLHttpRequest();
-        // todo: sanitize input
-        // xhttp.onreadystatechange = (this) => {
-        //     if (this.readyState == 4 && this.status == 200) {
-        //     }
-        // };
-
-        // xhttp.open("POST", `/fixed/${e.getAttribute("addressee").split(" ").join("")}`, true);
-        // xhttp.send(`msg=${input.value}`);
-        input.value = "";
+        document.getElementById("msg-input").value = "";
     });
+
+    document.getElementById("msg-input").addEventListener("keydown", (e) => {
+        if (e.keyCode == 13) {
+            document.getElementById("send").click();
+        }
+    });
+
+    socket.onmessage = function (event) {
+        if (event.data.split(":")[0] == addressee || event.data.split(":")[0] == "x") { // "x" is debug override
+            addMessageBox(event.data.split(":")[1], false);
+        }
+    };
+
+    socket.onclose = function (event) {
+        if (event.wasClean) {
+            console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+        } else {
+            // e.g. server process killed or network down
+            // event.code is usually 1006 in this case
+            console.log('[close] Connection died');
+        }
+    };
+
+    socket.onerror = function (error) {
+        console.log(`[error] ${error.message}`);
+    };
 
     scrollBottom();
 })();
